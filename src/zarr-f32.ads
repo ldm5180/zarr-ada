@@ -6,8 +6,9 @@ with Zarr.Fills;
 
 package Zarr.F32 is new
   Zarr.Arrays
-    (Element  => Float,
-     Itemsize => 4,
-     Expect   => Zarr.D_F4,
-     Fill     => Zarr.Fills.Quiet_NaN,
-     Decode   => Zarr.Codec.Decode_F4);
+    (Element    => Float,
+     Itemsize   => 4,
+     Expect     => Zarr.D_F4,
+     Fill       => Zarr.Fills.Quiet_NaN,
+     Decode     => Zarr.Codec.Decode_F4,
+     Parse_Fill => Zarr.Fills.Float_Fill);

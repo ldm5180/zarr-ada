@@ -24,13 +24,16 @@ Supported, because that is what the target data uses:
   (ready-made readers `Zarr.F32`, `Zarr.I32`, `Zarr.I64`; add others by
   instantiating `Zarr.Arrays` with a decoder).
 - **Arbitrary rank** (1-D, 2-D, 3-D, … up to `Max_Rank` = 32), regular chunk
-  grids with edge-chunk trimming, and the `.` dimension separator.
+  grids with edge-chunk trimming, and either `.` or `/` dimension separators.
+- The `.zarray` `fill_value` (number, `NaN`, `Infinity`, `null`) — honoured for
+  omitted (all-fill) chunks and edge padding.
 - The **Blosc** compressor with any inner codec (zstd, lz4, …) and any shuffle —
   decompression is delegated to the system Blosc library, which handles it all.
 
-Out of scope (raises `Unsupported` or is simply not implemented): Zarr v3,
-Fortran order, structured/object dtypes, filter pipelines, sharding, and
-non-directory stores.
+Out of scope — **rejected with `Unsupported`** rather than mis-read: Zarr v3,
+Fortran order, dtypes other than `<f4`/`<i4`/`<i8` (incl. big-endian), a
+non-empty `filters` pipeline, and any compressor other than Blosc (e.g. a bare
+`zlib`/`gzip` codec). Sharding and non-directory stores are not implemented.
 
 ## Dependency: libblosc
 

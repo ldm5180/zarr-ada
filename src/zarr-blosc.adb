@@ -17,6 +17,11 @@ package body Zarr.Blosc is
       if Dst'Length = 0 then
          return;
       end if;
+      --  A Blosc v1 frame is at least a 16-byte header; refuse anything
+      --  shorter so blosc_decompress never reads past a truncated/empty chunk.
+      if Src'Length < 16 then
+         raise Decompress_Error with "chunk too small to be a Blosc frame";
+      end if;
       RC := C_Decompress (Src'Address, Dst'Address, size_t (Dst'Length));
       if Long_Integer (RC) /= Long_Integer (Dst'Length) then
          raise Decompress_Error

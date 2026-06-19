@@ -1,7 +1,11 @@
-with Ada.Strings.Fixed; use Ada.Strings.Fixed;
+with Ada.Strings.Fixed;     use Ada.Strings.Fixed;
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Zarr.Stores;
 
 package body Zarr.Metadata is
+
+   function Is_Space (C : Character) return Boolean
+   is (C = ' ' or else C = ASCII.HT or else C = ASCII.LF or else C = ASCII.CR);
 
    --  Index just past the colon following "Key" (0 if the key is absent).
    function After_Key (S : String; Key : String) return Natural is
@@ -12,13 +16,7 @@ package body Zarr.Metadata is
          return 0;
       end if;
       P := P + Q'Length;
-      while P <= S'Last
-        and then (S (P) = ' '
-                  or else S (P) = ':'
-                  or else S (P) = ASCII.HT
-                  or else S (P) = ASCII.LF
-                  or else S (P) = ASCII.CR)
-      loop
+      while P <= S'Last and then (Is_Space (S (P)) or else S (P) = ':') loop
          P := P + 1;
       end loop;
       return P;
@@ -40,7 +38,31 @@ package body Zarr.Metadata is
       return S (I .. J - 1);
    end Read_String;
 
-   --  The integers of the [...] starting at/after Start.
+   --  The raw JSON scalar value at Start: a quoted string's contents, or an
+   --  unquoted run (number / null / true / false).  "" if the key was absent.
+   function Read_Value (S : String; Start : Natural) return String is
+      J : Natural;
+   begin
+      if Start = 0 or else Start > S'Last then
+         return "";
+      end if;
+      if S (Start) = '"' then
+         return Read_String (S, Start);
+      end if;
+      J := Start;
+      while J <= S'Last
+        and then S (J) /= ','
+        and then S (J) /= '}'
+        and then S (J) /= ']'
+        and then not Is_Space (S (J))
+      loop
+         J := J + 1;
+      end loop;
+      return S (Start .. J - 1);
+   end Read_Value;
+
+   --  The integers of the [...] starting at/after Start.  Count = 0 when the
+   --  key is absent (Start = 0) so the caller can raise a clean error.
    procedure Read_Int_Array
      (S : String; Start : Natural; E : out Extent_Array; Count : out Natural)
    is
@@ -48,18 +70,15 @@ package body Zarr.Metadata is
    begin
       E := [others => 0];
       Count := 0;
+      if Start = 0 or else Start > S'Last then
+         return;
+      end if;
       while I <= S'Last and then S (I) /= '[' loop
          I := I + 1;
       end loop;
       I := I + 1;  --  past '['
       loop
-         while I <= S'Last
-           and then (S (I) = ' '
-                     or else S (I) = ','
-                     or else S (I) = ASCII.HT
-                     or else S (I) = ASCII.LF
-                     or else S (I) = ASCII.CR)
-         loop
+         while I <= S'Last and then (Is_Space (S (I)) or else S (I) = ',') loop
             I := I + 1;
          end loop;
          exit when I > S'Last or else S (I) = ']';
@@ -67,6 +86,9 @@ package body Zarr.Metadata is
             V : Natural := 0;
          begin
             while I <= S'Last and then S (I) in '0' .. '9' loop
+               if V > (Natural'Last - 9) / 10 then
+                  raise Unsupported with "array dimension too large";
+               end if;
                V := V * 10 + (Character'Pos (S (I)) - Character'Pos ('0'));
                I := I + 1;
             end loop;
@@ -97,6 +119,8 @@ package body Zarr.Metadata is
       M      : Array_Meta;
       Sc, Cc : Natural;
       P      : Natural;
+      Sep    : constant String :=
+        Read_String (Text, After_Key (Text, "dimension_separator"));
    begin
       Read_Int_Array (Text, After_Key (Text, "shape"), M.Shape, Sc);
       Read_Int_Array (Text, After_Key (Text, "chunks"), M.Chunks, Cc);
@@ -106,6 +130,13 @@ package body Zarr.Metadata is
       end if;
       M.Rank := Sc;
 
+      --  A chunk extent of 0 would divide by zero when sizing the chunk grid.
+      for D in 1 .. M.Rank loop
+         if M.Chunks (D) = 0 then
+            raise Unsupported with "zero chunk extent";
+         end if;
+      end loop;
+
       M.Dtype := To_Dtype (Read_String (Text, After_Key (Text, "dtype")));
 
       M.Order :=
@@ -113,12 +144,47 @@ package body Zarr.Metadata is
          then C_Order
          else F_Order);
 
+      if Sep'Length >= 1 then
+         M.Separator := Sep (Sep'First);
+      end if;
+
+      M.Fill_Token :=
+        To_Unbounded_String (Read_Value (Text, After_Key (Text, "fill_value")));
+
+      --  Filters (pre-compression transforms) are not reversed, so only an
+      --  absent or empty filter list can be read correctly.
+      P := After_Key (Text, "filters");
+      if P /= 0 and then P <= Text'Last and then Text (P) = '[' then
+         declare
+            Q : Natural := P + 1;
+         begin
+            while Q <= Text'Last and then Is_Space (Text (Q)) loop
+               Q := Q + 1;
+            end loop;
+            if Q > Text'Last or else Text (Q) /= ']' then
+               raise Unsupported with "filters are not supported";
+            end if;
+         end;
+      end if;
+
+      --  Compressor: null = none; otherwise it must be the Blosc meta-codec
+      --  (whose inner codec -- zstd/lz4/... -- is handled by libblosc).  A
+      --  bare zlib/gzip/... codec is rejected rather than misrouted to blosc.
       P := After_Key (Text, "compressor");
-      if P = 0 or else (P + 3 <= Text'Last and then Text (P .. P + 3) = "null")
-      then
+      if P = 0 or else (P <= Text'Last and then Text (P) = 'n') then
          M.Compressor := No_Compressor;
       else
-         M.Compressor := Blosc_Compressor;
+         declare
+            Id : constant String :=
+              Read_String (Text, After_Key (Text, "id"));
+         begin
+            if Id = "blosc" then
+               M.Compressor := Blosc_Compressor;
+            else
+               raise Unsupported
+                 with "compressor """ & Id & """ is not supported";
+            end if;
+         end;
       end if;
 
       return M;

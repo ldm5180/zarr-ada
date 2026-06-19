@@ -102,6 +102,66 @@ package body Zarr_Reader_Tests is
          null;  --  expected
    end Test_Missing_Array;
 
+   --  Out-of-range coordinate must be rejected, not silently mis-indexed.
+   procedure Test_Out_Of_Range
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      use Zarr.I32;
+      A     : constant Array_Data := Load (Fixture, "ints");  --  (5,4)
+      Dummy : Integer_32;
+   begin
+      Dummy := Element_At (A, [0, 4]);  --  column 4 is out of bounds (0 .. 3)
+      Assert (False, "out-of-range coordinate should raise" & Dummy'Image);
+   exception
+      when Constraint_Error =>
+         null;  --  expected
+   end Test_Out_Of_Range;
+
+   --  fill_value from the .zarray is honoured for omitted (all-fill) chunks.
+   procedure Test_Fill_Value (T : in out AUnit.Test_Cases.Test_Case'Class) is
+      pragma Unreferenced (T);
+      use Zarr.I32;
+      --  sparse: (4,) int32, chunks (2,), fill_value = -1, 2nd chunk omitted.
+      A : constant Array_Data := Load ("tests/fixtures/sparse.zarr", "v");
+   begin
+      Assert (A.Items (1) = 10 and then A.Items (2) = 20, "stored chunk");
+      Assert (A.Items (3) = -1 and then A.Items (4) = -1,
+              "omitted chunk uses fill_value = -1, not 0");
+   end Test_Fill_Value;
+
+   --  A "/" dimension_separator is honoured (chunks under 0/0, 0/1, ...).
+   procedure Test_Nested_Separator
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      use Zarr.I32;
+      A : constant Array_Data := Load ("tests/fixtures/nested.zarr", "m");
+   begin
+      Assert (A.Shape (1) = 4 and then A.Shape (2) = 3, "shape (4,3)");
+      Assert (Element_At (A, [0, 0]) = 0, "m[0,0] = 0");
+      Assert (Element_At (A, [1, 1]) = 4, "m[1,1] = 4");
+      Assert (Element_At (A, [3, 2]) = 11, "m[3,2] = 11 (last chunk via '/')");
+   end Test_Nested_Separator;
+
+   --  A non-Blosc compressor (zlib) is rejected, not misrouted to libblosc.
+   procedure Test_Reject_Non_Blosc
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+   begin
+      declare
+         A : constant Zarr.I32.Array_Data :=
+           Zarr.I32.Load ("tests/fixtures/zlibbed.zarr", "v");
+         pragma Unreferenced (A);
+      begin
+         Assert (False, "zlib compressor should raise Unsupported");
+      end;
+   exception
+      when Zarr.Unsupported =>
+         null;  --  expected
+   end Test_Reject_Non_Blosc;
+
    procedure Register_Tests (T : in out Test) is
    begin
       Register_Routine
@@ -114,6 +174,17 @@ package body Zarr_Reader_Tests is
         (T, Test_Dtype_Mismatch'Access, "dtype mismatch raises Unsupported");
       Register_Routine
         (T, Test_Missing_Array'Access, "missing array raises IO_Error");
+      Register_Routine
+        (T, Test_Out_Of_Range'Access,
+         "out-of-range coordinate raises Constraint_Error");
+      Register_Routine
+        (T, Test_Fill_Value'Access, "fill_value honoured for omitted chunks");
+      Register_Routine
+        (T, Test_Nested_Separator'Access,
+         "'/' dimension_separator is honoured");
+      Register_Routine
+        (T, Test_Reject_Non_Blosc'Access,
+         "non-Blosc compressor raises Unsupported");
    end Register_Tests;
 
    overriding

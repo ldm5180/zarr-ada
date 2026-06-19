@@ -26,12 +26,6 @@ is
    --  The numpy dtypes this reader decodes (all little-endian).
    type Dtype_Code is (D_F4, D_I4, D_I8);
 
-   function Itemsize (D : Dtype_Code) return Positive
-   is (case D is
-         when D_F4 => 4,
-         when D_I4 => 4,
-         when D_I8 => 8);
-
    --  Well-formed store, but using a feature this reader does not handle.
    Unsupported      : exception;
    --  Filesystem error while reading the store.

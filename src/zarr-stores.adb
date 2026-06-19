@@ -24,6 +24,10 @@ package body Zarr.Stores is
       begin
          if Len > 0 then
             Read (F, SEA, Last);
+            if Last /= SEA'Last then
+               Close (F);
+               raise IO_Error with "short read: " & Path;
+            end if;
             for I in Result'Range loop
                Result (I) := Byte (SEA (Stream_Element_Offset (I + 1)));
             end loop;
@@ -33,7 +37,7 @@ package body Zarr.Stores is
       end;
    exception
       when IO_Error =>
-         raise;
+         raise;  --  already our exception (e.g. short read) -- preserve it
       when others =>
          if Ada.Streams.Stream_IO.Is_Open (F) then
             Ada.Streams.Stream_IO.Close (F);

@@ -7,8 +7,10 @@ generic
    type Element is private;
    Itemsize : Positive;                 --  bytes per element (matches dtype)
    Expect : Dtype_Code;               --  dtype this instance accepts
-   Fill : Element;                  --  value for gaps / missing chunks
+   Fill : Element;                  --  fallback fill when none in metadata
    with function Decode (B : Byte_Array) return Element;
+   --  Convert a Zarr fill_value token to an element (Default if empty/null).
+   with function Parse_Fill (Token : String; Default : Element) return Element;
 package Zarr.Arrays with SPARK_Mode => Off is
 
    type Element_Sequence is array (Positive range <>) of Element;

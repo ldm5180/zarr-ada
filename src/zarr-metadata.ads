@@ -1,3 +1,5 @@
+with Ada.Strings.Unbounded;
+
 --  Parsing of a Zarr v2 array header (.zarray).  The files are small and
 --  machine-generated with a stable shape, so a targeted key/value scanner is
 --  used rather than a full JSON parser (kept out of SPARK: text + I/O).
@@ -16,10 +18,15 @@ is
       Dtype      : Dtype_Code := D_F4;
       Order      : Mem_Order := C_Order;
       Compressor : Compressor_Kind := No_Compressor;
+      --  Chunk-key dimension separator ("." or "/"); default "." for v2.
+      Separator  : Character := '.';
+      --  Raw fill_value token (number / "NaN" / ... / "null"); empty if absent.
+      Fill_Token : Ada.Strings.Unbounded.Unbounded_String :=
+        Ada.Strings.Unbounded.Null_Unbounded_String;
    end record;
 
    --  Read and parse <Array_Dir>/.zarray.  Raises Unsupported for dtypes,
-   --  ranks or orders outside this reader's scope.
+   --  ranks, orders, compressors or filters outside this reader's scope.
    function Read_Array_Meta (Array_Dir : String) return Array_Meta;
 
 end Zarr.Metadata;
