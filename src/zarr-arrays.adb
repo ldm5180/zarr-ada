@@ -95,7 +95,8 @@ package body Zarr.Arrays is
       R        : constant Rank_Range := M.Rank;
       Shape    : constant Extent_Array := M.Shape (1 .. R);
       Chunks   : constant Extent_Array := M.Chunks (1 .. R);
-      Fill_Val : constant Element := Parse_Fill (To_String (M.Fill_Token), Fill);
+      Fill_Val : constant Element :=
+        Parse_Fill (To_String (M.Fill_Token), Fill);
    begin
       if M.Dtype /= Expect then
          raise Unsupported with "dtype mismatch reading " & Name;

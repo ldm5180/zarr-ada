@@ -149,7 +149,8 @@ package body Zarr.Metadata is
       end if;
 
       M.Fill_Token :=
-        To_Unbounded_String (Read_Value (Text, After_Key (Text, "fill_value")));
+        To_Unbounded_String
+          (Read_Value (Text, After_Key (Text, "fill_value")));
 
       --  Filters (pre-compression transforms) are not reversed, so only an
       --  absent or empty filter list can be read correctly.
@@ -175,8 +176,7 @@ package body Zarr.Metadata is
          M.Compressor := No_Compressor;
       else
          declare
-            Id : constant String :=
-              Read_String (Text, After_Key (Text, "id"));
+            Id : constant String := Read_String (Text, After_Key (Text, "id"));
          begin
             if Id = "blosc" then
                M.Compressor := Blosc_Compressor;

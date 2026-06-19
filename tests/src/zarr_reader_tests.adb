@@ -103,9 +103,7 @@ package body Zarr_Reader_Tests is
    end Test_Missing_Array;
 
    --  Out-of-range coordinate must be rejected, not silently mis-indexed.
-   procedure Test_Out_Of_Range
-     (T : in out AUnit.Test_Cases.Test_Case'Class)
-   is
+   procedure Test_Out_Of_Range (T : in out AUnit.Test_Cases.Test_Case'Class) is
       pragma Unreferenced (T);
       use Zarr.I32;
       A     : constant Array_Data := Load (Fixture, "ints");  --  (5,4)
@@ -126,8 +124,9 @@ package body Zarr_Reader_Tests is
       A : constant Array_Data := Load ("tests/fixtures/sparse.zarr", "v");
    begin
       Assert (A.Items (1) = 10 and then A.Items (2) = 20, "stored chunk");
-      Assert (A.Items (3) = -1 and then A.Items (4) = -1,
-              "omitted chunk uses fill_value = -1, not 0");
+      Assert
+        (A.Items (3) = -1 and then A.Items (4) = -1,
+         "omitted chunk uses fill_value = -1, not 0");
    end Test_Fill_Value;
 
    --  A "/" dimension_separator is honoured (chunks under 0/0, 0/1, ...).
@@ -175,15 +174,18 @@ package body Zarr_Reader_Tests is
       Register_Routine
         (T, Test_Missing_Array'Access, "missing array raises IO_Error");
       Register_Routine
-        (T, Test_Out_Of_Range'Access,
+        (T,
+         Test_Out_Of_Range'Access,
          "out-of-range coordinate raises Constraint_Error");
       Register_Routine
         (T, Test_Fill_Value'Access, "fill_value honoured for omitted chunks");
       Register_Routine
-        (T, Test_Nested_Separator'Access,
+        (T,
+         Test_Nested_Separator'Access,
          "'/' dimension_separator is honoured");
       Register_Routine
-        (T, Test_Reject_Non_Blosc'Access,
+        (T,
+         Test_Reject_Non_Blosc'Access,
          "non-Blosc compressor raises Unsupported");
    end Register_Tests;
 
