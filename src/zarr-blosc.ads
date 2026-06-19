@@ -2,7 +2,10 @@
 --  blosc_decompress, undoes the whole Blosc v1 container: the inner codec
 --  (zstd, in the spxw data) and the byte/bit shuffle filter.  This is the one
 --  external, non-SPARK boundary of the reader.
-package Zarr.Blosc with SPARK_Mode => Off is
+
+package Zarr.Blosc
+  with SPARK_Mode => Off
+is
 
    pragma Linker_Options ("-lblosc");
 

@@ -24,8 +24,10 @@ package body Zarr_Reader_Tests is
       Assert (A.Length = 20, "20 elements");
       Assert (Element_At (A, [0, 0]) = 0, "ints[0,0] = 0");
       Assert (Element_At (A, [1, 1]) = 5, "ints[1,1] = 5 (chunk 0.0)");
-      Assert (Element_At (A, [2, 3]) = 11, "ints[2,3]=11 (chunk 0.1 col trim)");
-      Assert (Element_At (A, [4, 0]) = 16, "ints[4,0]=16 (chunk 1.0 row trim)");
+      Assert
+        (Element_At (A, [2, 3]) = 11, "ints[2,3]=11 (chunk 0.1 col trim)");
+      Assert
+        (Element_At (A, [4, 0]) = 16, "ints[4,0]=16 (chunk 1.0 row trim)");
       Assert (Element_At (A, [4, 3]) = 19, "ints[4,3]=19 (corner chunk 1.1)");
    end Test_2D_Edges;
 
@@ -37,8 +39,9 @@ package body Zarr_Reader_Tests is
       A : constant Array_Data := Load (Fixture, "cube");
    begin
       Assert (A.Rank = 3, "rank is 3");
-      Assert (A.Shape (1) = 2 and then A.Shape (2) = 3 and then A.Shape (3) = 4,
-              "shape (2,3,4)");
+      Assert
+        (A.Shape (1) = 2 and then A.Shape (2) = 3 and then A.Shape (3) = 4,
+         "shape (2,3,4)");
       Assert (A.Length = 24, "24 elements");
       Assert (Element_At (A, [0, 0, 0]) = 0, "cube[0,0,0] = 0");
       Assert (Element_At (A, [0, 1, 1]) = 5, "cube[0,1,1] = 5");
@@ -69,8 +72,7 @@ package body Zarr_Reader_Tests is
       Assert (Element_At (A, [3]) = 0.0, "flo[3] = 0.0");
    end Test_1D_Float;
 
-   procedure Test_Dtype_Mismatch
-     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   procedure Test_Dtype_Mismatch (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
    begin
@@ -85,8 +87,7 @@ package body Zarr_Reader_Tests is
          null;  --  expected
    end Test_Dtype_Mismatch;
 
-   procedure Test_Missing_Array
-     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   procedure Test_Missing_Array (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
    begin
@@ -103,16 +104,16 @@ package body Zarr_Reader_Tests is
 
    procedure Register_Tests (T : in out Test) is
    begin
-      Register_Routine (T, Test_2D_Edges'Access,
-                        "2-D multi-chunk read with edge trimming");
-      Register_Routine (T, Test_3D'Access,
-                        "3-D multi-chunk read (arbitrary rank)");
+      Register_Routine
+        (T, Test_2D_Edges'Access, "2-D multi-chunk read with edge trimming");
+      Register_Routine
+        (T, Test_3D'Access, "3-D multi-chunk read (arbitrary rank)");
       Register_Routine (T, Test_1D_Int64'Access, "1-D int64 read");
       Register_Routine (T, Test_1D_Float'Access, "1-D float32 read");
-      Register_Routine (T, Test_Dtype_Mismatch'Access,
-                        "dtype mismatch raises Unsupported");
-      Register_Routine (T, Test_Missing_Array'Access,
-                        "missing array raises IO_Error");
+      Register_Routine
+        (T, Test_Dtype_Mismatch'Access, "dtype mismatch raises Unsupported");
+      Register_Routine
+        (T, Test_Missing_Array'Access, "missing array raises IO_Error");
    end Register_Tests;
 
    overriding

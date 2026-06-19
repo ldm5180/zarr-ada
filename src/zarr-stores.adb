@@ -5,9 +5,9 @@ package body Zarr.Stores is
 
    use type Ada.Directories.File_Kind;
 
-   function Exists (Path : String) return Boolean is
-     (Ada.Directories.Exists (Path)
-      and then Ada.Directories.Kind (Path) = Ada.Directories.Ordinary_File);
+   function Exists (Path : String) return Boolean
+   is (Ada.Directories.Exists (Path)
+       and then Ada.Directories.Kind (Path) = Ada.Directories.Ordinary_File);
 
    function Read_File (Path : String) return Byte_Array is
       use Ada.Streams;

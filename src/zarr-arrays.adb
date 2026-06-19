@@ -132,7 +132,7 @@ package body Zarr.Arrays is
                         Scatter (Raw, CIdx, Chunks, Shape, Result);
                      end;
                   end if;
-                  --  Missing chunk: leave the Fill already in place.
+               --  Missing chunk: leave the Fill already in place.
                end;
                exit when not Increment (CIdx, NChunks);
             end loop;
@@ -140,7 +140,7 @@ package body Zarr.Arrays is
       end return;
    end Load;
 
-   function Element_At (A : Array_Data; Coord : Extent_Array) return Element is
-     (A.Items (To_Nat (Indexing.Linear (Coord, A.Shape)) + 1));
+   function Element_At (A : Array_Data; Coord : Extent_Array) return Element
+   is (A.Items (To_Nat (Indexing.Linear (Coord, A.Shape)) + 1));
 
 end Zarr.Arrays;

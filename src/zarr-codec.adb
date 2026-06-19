@@ -1,6 +1,8 @@
 with Ada.Unchecked_Conversion;
 
-package body Zarr.Codec with SPARK_Mode is
+package body Zarr.Codec
+  with SPARK_Mode
+is
 
    use Interfaces;
 
@@ -8,8 +10,7 @@ package body Zarr.Codec with SPARK_Mode is
 
    --  Assemble little-endian bytes by iterating B'Range, so every index is
    --  valid by construction and no B'First + k offset can overflow.
-   function LE32 (B : Byte_Array) return Unsigned_32
-     with Pre => B'Length = 4
+   function LE32 (B : Byte_Array) return Unsigned_32 with Pre => B'Length = 4
    is
       R : Unsigned_32 := 0;
    begin
@@ -19,8 +20,7 @@ package body Zarr.Codec with SPARK_Mode is
       return R;
    end LE32;
 
-   function LE64 (B : Byte_Array) return Unsigned_64
-     with Pre => B'Length = 8
+   function LE64 (B : Byte_Array) return Unsigned_64 with Pre => B'Length = 8
    is
       R : Unsigned_64 := 0;
    begin
@@ -41,9 +41,7 @@ package body Zarr.Codec with SPARK_Mode is
 
    --  Reinterpreting 32 bits as a float is the one thing SPARK cannot model
    --  (floats have invalid bit patterns), so this single body is excluded.
-   function Decode_F4 (B : Byte_Array) return Float
-     with SPARK_Mode => Off
-   is
+   function Decode_F4 (B : Byte_Array) return Float with SPARK_Mode => Off is
       function To_F32 is new Ada.Unchecked_Conversion (Unsigned_32, Float);
    begin
       return To_F32 (LE32 (B));

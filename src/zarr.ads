@@ -3,7 +3,10 @@ with Interfaces;
 --  Root of a minimal reader for Zarr v2 stores.  Scope is deliberately small:
 --  C (row-major) order, little-endian numeric dtypes, 1-D and 2-D arrays, with
 --  chunks decompressed by the system Blosc library.  See README.md.
-package Zarr with SPARK_Mode is
+
+package Zarr
+  with SPARK_Mode
+is
 
    --  Highest array rank supported.  32 matches numpy's historical dimension
    --  limit; an array with more dimensions raises Unsupported.  The reader is
@@ -23,16 +26,16 @@ package Zarr with SPARK_Mode is
    --  The numpy dtypes this reader decodes (all little-endian).
    type Dtype_Code is (D_F4, D_I4, D_I8);
 
-   function Itemsize (D : Dtype_Code) return Positive is
-     (case D is
+   function Itemsize (D : Dtype_Code) return Positive
+   is (case D is
          when D_F4 => 4,
          when D_I4 => 4,
          when D_I8 => 8);
 
    --  Well-formed store, but using a feature this reader does not handle.
-   Unsupported : exception;
+   Unsupported      : exception;
    --  Filesystem error while reading the store.
-   IO_Error : exception;
+   IO_Error         : exception;
    --  libblosc reported a failure (or an unexpected output size).
    Decompress_Error : exception;
 

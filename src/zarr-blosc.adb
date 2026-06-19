@@ -9,7 +9,7 @@ package body Zarr.Blosc is
    --  Returns the number of bytes written (> 0), or < 0 on error.
    function C_Decompress
      (Src, Dest : System.Address; Destsize : size_t) return int
-     with Import, Convention => C, External_Name => "blosc_decompress";
+   with Import, Convention => C, External_Name => "blosc_decompress";
 
    procedure Decompress (Src : Byte_Array; Dst : out Byte_Array) is
       RC : int;
@@ -20,8 +20,12 @@ package body Zarr.Blosc is
       RC := C_Decompress (Src'Address, Dst'Address, size_t (Dst'Length));
       if Long_Integer (RC) /= Long_Integer (Dst'Length) then
          raise Decompress_Error
-           with "blosc_decompress returned" & int'Image (RC)
-                & " (expected" & Natural'Image (Dst'Length) & ")";
+           with
+             "blosc_decompress returned"
+             & int'Image (RC)
+             & " (expected"
+             & Natural'Image (Dst'Length)
+             & ")";
       end if;
    end Decompress;
 

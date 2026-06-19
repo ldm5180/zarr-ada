@@ -13,8 +13,11 @@ package body Zarr.Metadata is
       end if;
       P := P + Q'Length;
       while P <= S'Last
-        and then (S (P) = ' ' or else S (P) = ':' or else S (P) = ASCII.HT
-                  or else S (P) = ASCII.LF or else S (P) = ASCII.CR)
+        and then (S (P) = ' '
+                  or else S (P) = ':'
+                  or else S (P) = ASCII.HT
+                  or else S (P) = ASCII.LF
+                  or else S (P) = ASCII.CR)
       loop
          P := P + 1;
       end loop;
@@ -43,7 +46,7 @@ package body Zarr.Metadata is
    is
       I : Natural := Start;
    begin
-      E     := [others => 0];
+      E := [others => 0];
       Count := 0;
       while I <= S'Last and then S (I) /= '[' loop
          I := I + 1;
@@ -51,8 +54,11 @@ package body Zarr.Metadata is
       I := I + 1;  --  past '['
       loop
          while I <= S'Last
-           and then (S (I) = ' ' or else S (I) = ',' or else S (I) = ASCII.HT
-                     or else S (I) = ASCII.LF or else S (I) = ASCII.CR)
+           and then (S (I) = ' '
+                     or else S (I) = ','
+                     or else S (I) = ASCII.HT
+                     or else S (I) = ASCII.LF
+                     or else S (I) = ASCII.CR)
          loop
             I := I + 1;
          end loop;
@@ -92,7 +98,7 @@ package body Zarr.Metadata is
       Sc, Cc : Natural;
       P      : Natural;
    begin
-      Read_Int_Array (Text, After_Key (Text, "shape"),  M.Shape,  Sc);
+      Read_Int_Array (Text, After_Key (Text, "shape"), M.Shape, Sc);
       Read_Int_Array (Text, After_Key (Text, "chunks"), M.Chunks, Cc);
       if Sc = 0 or else Sc > Max_Rank or else Sc /= Cc then
          raise Unsupported
@@ -104,11 +110,11 @@ package body Zarr.Metadata is
 
       M.Order :=
         (if Read_String (Text, After_Key (Text, "order")) = "C"
-         then C_Order else F_Order);
+         then C_Order
+         else F_Order);
 
       P := After_Key (Text, "compressor");
-      if P = 0
-        or else (P + 3 <= Text'Last and then Text (P .. P + 3) = "null")
+      if P = 0 or else (P + 3 <= Text'Last and then Text (P .. P + 3) = "null")
       then
          M.Compressor := No_Compressor;
       else
