@@ -1,0 +1,29 @@
+with "config/zarr_config.gpr";
+project Zarr is
+
+   for Library_Name use "Zarr";
+   for Library_Version use Project'Library_Name & ".so." & Zarr_Config.Crate_Version;
+
+   for Source_Dirs use ("src/", "config/");
+   for Object_Dir use "obj/" & Zarr_Config.Build_Profile;
+   for Create_Missing_Dirs use "True";
+   for Library_Dir use "lib";
+
+   type Library_Type_Type is ("relocatable", "static", "static-pic");
+   Library_Type : Library_Type_Type :=
+     external ("ZARR_LIBRARY_TYPE", external ("LIBRARY_TYPE", "static"));
+   for Library_Kind use Library_Type;
+
+   package Compiler is
+      --  -gnatVn (no validity checks) overrides the -gnatVa that Alire's
+      --  profile adds: this reader deliberately handles IEEE NaN (zarr's float
+      --  fill value), which a validity check rejects as "invalid data".
+      for Default_Switches ("Ada") use
+        Zarr_Config.Ada_Compiler_Switches & ("-gnatVn");
+   end Compiler;
+
+   package Binder is
+      for Switches ("Ada") use ("-Es"); --  Symbolic traceback
+   end Binder;
+
+end Zarr;

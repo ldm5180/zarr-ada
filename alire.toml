@@ -1,0 +1,27 @@
+name = "zarr"
+description = "Minimal Zarr v2 array reader (Blosc/zstd) - Ada 2022 + SPARK"
+version = "0.1.0-dev"
+
+authors = ["lenny"]
+maintainers = ["lenny <ldm5180@gmail.com>"]
+maintainers-logins = ["ldm5180"]
+licenses = "MIT OR Apache-2.0 WITH LLVM-exception"
+website = ""
+tags = ["zarr", "ndarray", "blosc", "spark"]
+
+#  Decompression is delegated to the system Blosc library (libblosc-dev);
+#  there is no Alire crate for it, so it is linked via pragma Linker_Options
+#  in src/zarr-blosc.ads.  Install it with:  sudo apt install libblosc-dev
+
+[build-switches]
+"*".ada_version = "Ada2022"
+
+[[depends-on]]
+aunit = "^26.0.0"
+
+#  `alr test` builds the AUnit runner and runs it from the crate root (so the
+#  committed fixture under tests/fixtures resolves); it exits non-zero on any
+#  failed assertion so CI fails loudly.
+[[actions]]
+type = "test"
+command = ["sh", "-c", "alr exec -- gprbuild -p -P tests/test_zarr.gpr && tests/bin/test_runner"]

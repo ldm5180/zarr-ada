@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+#  Run JavaScript actions on Node 24 to silence Node 20 deprecation warnings,
+#  including those internal to alire-project/setup-alire.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  build-and-test:
+    name: Build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install libblosc (chunk decompression)
+        run: sudo apt-get update && sudo apt-get install -y libblosc-dev
+
+      - name: Set up Alire + GNAT toolchain
+        uses: alire-project/setup-alire@v6
+
+      - name: Build the library
+        run: alr --non-interactive build
+
+      - name: Run the AUnit suite (reads the committed fixture)
+        run: alr --non-interactive test
+
+  proof:
+    name: SPARK proof
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install libblosc
+        run: sudo apt-get update && sudo apt-get install -y libblosc-dev
+
+      - name: Set up Alire + GNAT toolchain
+        uses: alire-project/setup-alire@v6
+
+      - name: Build
+        run: alr --non-interactive build
+
+      - name: Install gnatprove
+        run: |
+          alr --non-interactive install --prefix="$HOME/.alire" gnatprove
+          echo "$HOME/.alire/bin" >> "$GITHUB_PATH"
+
+      - name: Prove the SPARK core
+        run: alr exec -- gnatprove -P zarr.gpr -j0 --level=2 --checks-as-errors=on
+
+  format:
+    name: Formatting (gnatformat --check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Alire + GNAT toolchain
+        uses: alire-project/setup-alire@v6
+
+      - name: Install gnatformat
+        run: |
+          alr --non-interactive install --prefix="$HOME/.alire" gnatformat_bin
+          echo "$HOME/.alire/bin" >> "$GITHUB_PATH"
+
+      - name: Check formatting
+        run: |
+          files=$(find src tests/src example \( -name '*.ads' -o -name '*.adb' \))
+          echo "Checking:"; echo "$files"
+          gnatformat --no-project --check $files

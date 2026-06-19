@@ -1,0 +1,11 @@
+# Build artifacts (any project)
+obj/
+bin/
+lib/
+
+# Alire-generated
+/config/
+/alire/
+
+*.o
+*.ali
