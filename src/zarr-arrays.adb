@@ -127,13 +127,13 @@ package body Zarr.Arrays is
                         when Metadata.Blosc_Compressor =>
                            Blosc.Decompress (Comp, Raw);
 
-                        when Metadata.Zlib_Compressor =>
+                        when Metadata.Zlib_Compressor  =>
                            Zlib.Decompress (Comp, Raw);
 
-                        when Metadata.Bz2_Compressor =>
+                        when Metadata.Bz2_Compressor   =>
                            Bz2.Decompress (Comp, Raw);
 
-                        when Metadata.No_Compressor =>
+                        when Metadata.No_Compressor    =>
                            if Comp'Length /= Raw'Length then
                               raise Decompress_Error
                                 with "uncompressed chunk size mismatch";
@@ -172,8 +172,9 @@ package body Zarr.Arrays is
          end return;
       end if;
 
-      return Result :
-        Array_Data (Length => To_Nat (Indexing.Product (Shape)), Rank => R)
+      return
+         Result :
+           Array_Data (Length => To_Nat (Indexing.Product (Shape)), Rank => R)
       do
          Result.Shape := Shape;
          Result.Items := [others => Fill_Val];
