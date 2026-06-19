@@ -12,6 +12,22 @@ package body Zarr_Reader_Tests is
    --  python-zarr.  Run the test runner from the repo root.
    Fixture : constant String := "tests/fixtures/sample.zarr";
 
+   --  Load an int32 array and check its length and first/last element.
+   procedure Expect_I32
+     (Store, Name : String;
+      Len         : Natural;
+      First, Last : Integer_32;
+      Label       : String)
+   is
+      use Zarr.I32;
+      A : constant Array_Data := Load (Store, Name);
+   begin
+      Assert (A.Length = Len, Label & " length");
+      Assert
+        (A.Items (1) = First and then A.Items (A.Length) = Last,
+         Label & " values");
+   end Expect_I32;
+
    --  ints: 5x4 int32 in 3x3 chunks (a 2x2 chunk grid with trimmed edges),
    --  values arange(20).reshape(5,4).
    procedure Test_2D_Edges (T : in out AUnit.Test_Cases.Test_Case'Class) is
@@ -143,34 +159,23 @@ package body Zarr_Reader_Tests is
       Assert (Element_At (A, [3, 2]) = 11, "m[3,2] = 11 (last chunk via '/')");
    end Test_Nested_Separator;
 
-   --  A zlib-compressed store (numcodecs "zlib") is read via libz.
+   --  zlib / gzip / bz2 compressors are read via libz and libbz2.
    procedure Test_Zlib (T : in out AUnit.Test_Cases.Test_Case'Class) is
       pragma Unreferenced (T);
-      use Zarr.I32;
-      A : constant Array_Data := Load ("tests/fixtures/zlibbed.zarr", "v");
    begin
-      Assert (A.Length = 4, "4 elements");
-      Assert (A.Items (1) = 1 and then A.Items (4) = 4, "zlib v = 1..4");
+      Expect_I32 ("tests/fixtures/zlibbed.zarr", "v", 4, 1, 4, "zlib");
    end Test_Zlib;
 
-   --  A gzip-compressed store (numcodecs "gzip") is read via libz (same path).
    procedure Test_Gzip (T : in out AUnit.Test_Cases.Test_Case'Class) is
       pragma Unreferenced (T);
-      use Zarr.I32;
-      A : constant Array_Data := Load ("tests/fixtures/gzipped.zarr", "v");
    begin
-      Assert (A.Length = 4, "4 elements");
-      Assert (A.Items (1) = 5 and then A.Items (4) = 8, "gzip v = 5..8");
+      Expect_I32 ("tests/fixtures/gzipped.zarr", "v", 4, 5, 8, "gzip");
    end Test_Gzip;
 
-   --  A bz2-compressed store (numcodecs "bz2") is read via libbz2.
    procedure Test_Bz2 (T : in out AUnit.Test_Cases.Test_Case'Class) is
       pragma Unreferenced (T);
-      use Zarr.I32;
-      A : constant Array_Data := Load ("tests/fixtures/bz2ed.zarr", "v");
    begin
-      Assert (A.Length = 3, "3 elements");
-      Assert (A.Items (1) = 9 and then A.Items (3) = 9, "bz2 v = 9,9,9");
+      Expect_I32 ("tests/fixtures/bz2ed.zarr", "v", 3, 9, 9, "bz2");
    end Test_Bz2;
 
    --  A still-unsupported codec (lzma) is rejected, not mis-decoded.

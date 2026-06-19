@@ -3,9 +3,13 @@ package body Zarr.Fills is
    Pos_Inf : constant Float := To_Float (16#7F80_0000#);
    Neg_Inf : constant Float := To_Float (16#FF80_0000#);
 
+   --  zarr writes an absent fill as JSON null; we also treat "" (no token) so.
+   function Is_Null (Token : String) return Boolean
+   is (Token = "" or else Token = "null");
+
    function Float_Fill (Token : String; Default : Float) return Float is
    begin
-      if Token = "" or else Token = "null" then
+      if Is_Null (Token) then
          return Default;
       elsif Token = "NaN" then
          return Quiet_NaN;
@@ -25,7 +29,7 @@ package body Zarr.Fills is
      (Token : String; Default : Interfaces.Integer_32)
       return Interfaces.Integer_32 is
    begin
-      if Token = "" or else Token = "null" then
+      if Is_Null (Token) then
          return Default;
       end if;
       return Interfaces.Integer_32'Value (Token);
@@ -38,7 +42,7 @@ package body Zarr.Fills is
      (Token : String; Default : Interfaces.Integer_64)
       return Interfaces.Integer_64 is
    begin
-      if Token = "" or else Token = "null" then
+      if Is_Null (Token) then
          return Default;
       end if;
       return Interfaces.Integer_64'Value (Token);

@@ -7,6 +7,19 @@ package body Zarr.Metadata is
    function Is_Space (C : Character) return Boolean
    is (C = ' ' or else C = ASCII.HT or else C = ASCII.LF or else C = ASCII.CR);
 
+   --  True when the JSON value at P is an empty array "[]" (spaces tolerated).
+   function Empty_Array_At (S : String; P : Natural) return Boolean is
+      Q : Natural := P + 1;
+   begin
+      if P = 0 or else P > S'Last or else S (P) /= '[' then
+         return False;
+      end if;
+      while Q <= S'Last and then Is_Space (S (Q)) loop
+         Q := Q + 1;
+      end loop;
+      return Q <= S'Last and then S (Q) = ']';
+   end Empty_Array_At;
+
    --  Index just past the colon following "Key" (0 if the key is absent).
    function After_Key (S : String; Key : String) return Natural is
       Q : constant String := '"' & Key & '"';
@@ -155,17 +168,12 @@ package body Zarr.Metadata is
       --  Filters (pre-compression transforms) are not reversed, so only an
       --  absent or empty filter list can be read correctly.
       P := After_Key (Text, "filters");
-      if P /= 0 and then P <= Text'Last and then Text (P) = '[' then
-         declare
-            Q : Natural := P + 1;
-         begin
-            while Q <= Text'Last and then Is_Space (Text (Q)) loop
-               Q := Q + 1;
-            end loop;
-            if Q > Text'Last or else Text (Q) /= ']' then
-               raise Unsupported with "filters are not supported";
-            end if;
-         end;
+      if P /= 0
+        and then P <= Text'Last
+        and then Text (P) = '['
+        and then not Empty_Array_At (Text, P)
+      then
+         raise Unsupported with "filters are not supported";
       end if;
 
       --  Compressor: null = none; "blosc" via libblosc (which handles its

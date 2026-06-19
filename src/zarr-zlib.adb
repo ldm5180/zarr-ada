@@ -40,7 +40,9 @@ package body Zarr.Zlib is
    function Inflate (Strm : access Z_Stream; Flush : int) return int
    with Import, Convention => C, External_Name => "inflate";
 
-   function Inflate_End (Strm : access Z_Stream) return int
+   --  Imported as a procedure: inflateEnd's int result is just a cleanup
+   --  status we always ignore, so this lets the call be a plain statement.
+   procedure Inflate_End (Strm : access Z_Stream)
    with Import, Convention => C, External_Name => "inflateEnd";
 
    Z_Finish     : constant int := 4;
@@ -75,13 +77,7 @@ package body Zarr.Zlib is
       end if;
 
       RC := Inflate (Strm'Access, Z_Finish);
-
-      declare
-         Closed : constant int := Inflate_End (Strm'Access);
-         pragma Unreferenced (Closed);
-      begin
-         null;
-      end;
+      Inflate_End (Strm'Access);
 
       if RC /= Z_Stream_End then
          raise Decompress_Error with "inflate failed:" & int'Image (RC);

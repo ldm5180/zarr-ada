@@ -9,7 +9,6 @@ with Zarr.Bz2;
 package body Zarr.Arrays is
 
    use type Metadata.Mem_Order;
-   use type Metadata.Compressor_Kind;
 
    function To_Nat (V : Long_Long_Integer) return Natural is
    begin
@@ -90,13 +89,72 @@ package body Zarr.Arrays is
       end loop;
    end Scatter;
 
+   --  Read every chunk of an already-shaped, fill-initialised Result: for each
+   --  cell of the chunk grid, read its file (if present), decompress per the
+   --  metadata, and scatter the in-bounds elements.  A missing file is a chunk
+   --  that is entirely fill, so it is simply left as-is.
+   procedure Read_Chunks
+     (Result : in out Array_Data; Dir : String; M : Metadata.Array_Meta)
+   is
+      R      : constant Rank_Range := Result.Rank;
+      Shape  : constant Extent_Array := Result.Shape;
+      Chunks : constant Extent_Array := M.Chunks (1 .. R);
+      CElems : constant Natural := To_Nat (Indexing.Product (Chunks));
+   begin
+      if CElems > Natural'Last / Itemsize then
+         raise Unsupported with "chunk too large to buffer";
+      end if;
+
+      declare
+         NChunks : Extent_Array (1 .. R);
+         CIdx    : Extent_Array (1 .. R) := [others => 0];
+         Raw     : Byte_Array (0 .. CElems * Itemsize - 1);
+      begin
+         for D in 1 .. R loop
+            NChunks (D) := Indexing.Ceil_Div (Shape (D), Chunks (D));
+         end loop;
+
+         loop
+            declare
+               Path : constant String :=
+                 Dir & "/" & Chunk_Key (CIdx, M.Separator);
+            begin
+               if Stores.Exists (Path) then
+                  declare
+                     Comp : constant Byte_Array := Stores.Read_File (Path);
+                  begin
+                     case M.Compressor is
+                        when Metadata.Blosc_Compressor =>
+                           Blosc.Decompress (Comp, Raw);
+
+                        when Metadata.Zlib_Compressor =>
+                           Zlib.Decompress (Comp, Raw);
+
+                        when Metadata.Bz2_Compressor =>
+                           Bz2.Decompress (Comp, Raw);
+
+                        when Metadata.No_Compressor =>
+                           if Comp'Length /= Raw'Length then
+                              raise Decompress_Error
+                                with "uncompressed chunk size mismatch";
+                           end if;
+                           Raw := Comp;
+                     end case;
+                     Scatter (Raw, CIdx, Chunks, Shape, Result);
+                  end;
+               end if;
+            end;
+            exit when not Increment (CIdx, NChunks);
+         end loop;
+      end;
+   end Read_Chunks;
+
    function Load (Store : String; Name : String) return Array_Data is
       Dir      : constant String := Store & "/" & Name;
       M        : constant Metadata.Array_Meta :=
         Metadata.Read_Array_Meta (Dir);
       R        : constant Rank_Range := M.Rank;
       Shape    : constant Extent_Array := M.Shape (1 .. R);
-      Chunks   : constant Extent_Array := M.Chunks (1 .. R);
       Fill_Val : constant Element :=
         Parse_Fill (To_String (M.Fill_Token), Fill);
    begin
@@ -114,59 +172,13 @@ package body Zarr.Arrays is
          end return;
       end if;
 
-      declare
-         N      : constant Natural := To_Nat (Indexing.Product (Shape));
-         CElems : constant Natural := To_Nat (Indexing.Product (Chunks));
-      begin
-         if CElems > Natural'Last / Itemsize then
-            raise Unsupported with "chunk too large to buffer";
-         end if;
-
-         return Result : Array_Data (Length => N, Rank => R) do
-            Result.Shape := Shape;
-            Result.Items := [others => Fill_Val];
-            declare
-               CBytes  : constant Natural := CElems * Itemsize;
-               NChunks : Extent_Array (1 .. R);
-               CIdx    : Extent_Array (1 .. R) := [others => 0];
-               Raw     : Byte_Array (0 .. CBytes - 1);
-            begin
-               for D in 1 .. R loop
-                  NChunks (D) := Indexing.Ceil_Div (Shape (D), Chunks (D));
-               end loop;
-
-               loop
-                  declare
-                     Path : constant String :=
-                       Dir & "/" & Chunk_Key (CIdx, M.Separator);
-                  begin
-                     if Stores.Exists (Path) then
-                        declare
-                           Comp : constant Byte_Array :=
-                             Stores.Read_File (Path);
-                        begin
-                           if M.Compressor = Metadata.Blosc_Compressor then
-                              Blosc.Decompress (Comp, Raw);
-                           elsif M.Compressor = Metadata.Zlib_Compressor then
-                              Zlib.Decompress (Comp, Raw);
-                           elsif M.Compressor = Metadata.Bz2_Compressor then
-                              Bz2.Decompress (Comp, Raw);
-                           elsif Comp'Length = Raw'Length then
-                              Raw := Comp;
-                           else
-                              raise Decompress_Error
-                                with "uncompressed chunk size mismatch";
-                           end if;
-                           Scatter (Raw, CIdx, Chunks, Shape, Result);
-                        end;
-                     end if;
-                  --  Missing chunk: leave the Fill already in place.
-                  end;
-                  exit when not Increment (CIdx, NChunks);
-               end loop;
-            end;
-         end return;
-      end;
+      return Result :
+        Array_Data (Length => To_Nat (Indexing.Product (Shape)), Rank => R)
+      do
+         Result.Shape := Shape;
+         Result.Items := [others => Fill_Val];
+         Read_Chunks (Result, Dir, M);
+      end return;
    end Load;
 
    function Element_At (A : Array_Data; Coord : Extent_Array) return Element is
