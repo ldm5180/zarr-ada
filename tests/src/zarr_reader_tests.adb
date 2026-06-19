@@ -163,7 +163,17 @@ package body Zarr_Reader_Tests is
       Assert (A.Items (1) = 5 and then A.Items (4) = 8, "gzip v = 5..8");
    end Test_Gzip;
 
-   --  A still-unsupported codec (bz2) is rejected, not mis-decoded.
+   --  A bz2-compressed store (numcodecs "bz2") is read via libbz2.
+   procedure Test_Bz2 (T : in out AUnit.Test_Cases.Test_Case'Class) is
+      pragma Unreferenced (T);
+      use Zarr.I32;
+      A : constant Array_Data := Load ("tests/fixtures/bz2ed.zarr", "v");
+   begin
+      Assert (A.Length = 3, "3 elements");
+      Assert (A.Items (1) = 9 and then A.Items (3) = 9, "bz2 v = 9,9,9");
+   end Test_Bz2;
+
+   --  A still-unsupported codec (lzma) is rejected, not mis-decoded.
    procedure Test_Reject_Unsupported
      (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
@@ -171,10 +181,10 @@ package body Zarr_Reader_Tests is
    begin
       declare
          A : constant Zarr.I32.Array_Data :=
-           Zarr.I32.Load ("tests/fixtures/bz2ed.zarr", "v");
+           Zarr.I32.Load ("tests/fixtures/lzmaed.zarr", "v");
          pragma Unreferenced (A);
       begin
-         Assert (False, "bz2 compressor should raise Unsupported");
+         Assert (False, "lzma compressor should raise Unsupported");
       end;
    exception
       when Zarr.Unsupported =>
@@ -205,10 +215,11 @@ package body Zarr_Reader_Tests is
          "'/' dimension_separator is honoured");
       Register_Routine (T, Test_Zlib'Access, "zlib compressor read via libz");
       Register_Routine (T, Test_Gzip'Access, "gzip compressor read via libz");
+      Register_Routine (T, Test_Bz2'Access, "bz2 compressor read via libbz2");
       Register_Routine
         (T,
          Test_Reject_Unsupported'Access,
-         "unsupported compressor (bz2) raises Unsupported");
+         "unsupported compressor (lzma) raises Unsupported");
    end Register_Tests;
 
    overriding

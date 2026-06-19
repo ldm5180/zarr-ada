@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Install libblosc + zlib (chunk decompression)
-        run: sudo apt-get update && sudo apt-get install -y libblosc-dev zlib1g-dev
+        run: sudo apt-get update && sudo apt-get install -y libblosc-dev zlib1g-dev libbz2-dev
 
       - name: Set up Alire + GNAT toolchain
         uses: alire-project/setup-alire@v6
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Install libblosc + zlib
-        run: sudo apt-get update && sudo apt-get install -y libblosc-dev zlib1g-dev
+        run: sudo apt-get update && sudo apt-get install -y libblosc-dev zlib1g-dev libbz2-dev
 
       - name: Set up Alire + GNAT toolchain
         uses: alire-project/setup-alire@v6

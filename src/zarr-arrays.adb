@@ -4,6 +4,7 @@ with Zarr.Indexing;
 with Zarr.Stores;
 with Zarr.Blosc;
 with Zarr.Zlib;
+with Zarr.Bz2;
 
 package body Zarr.Arrays is
 
@@ -148,6 +149,8 @@ package body Zarr.Arrays is
                               Blosc.Decompress (Comp, Raw);
                            elsif M.Compressor = Metadata.Zlib_Compressor then
                               Zlib.Decompress (Comp, Raw);
+                           elsif M.Compressor = Metadata.Bz2_Compressor then
+                              Bz2.Decompress (Comp, Raw);
                            elsif Comp'Length = Raw'Length then
                               Raw := Comp;
                            else

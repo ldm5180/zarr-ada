@@ -28,25 +28,27 @@ Supported, because that is what the target data uses:
 - The `.zarray` `fill_value` (number, `NaN`, `Infinity`, `null`) — honoured for
   omitted (all-fill) chunks and edge padding.
 - Compressors: **Blosc** (any inner codec — zstd, lz4, … — and any shuffle) via
-  the system Blosc library, and **zlib** and **gzip** via the system zlib.
+  the system Blosc library, **zlib** and **gzip** via the system zlib, and
+  **bz2** via the system bzip2.
 
 Out of scope — **rejected with `Unsupported`** rather than mis-read: Zarr v3,
 Fortran order, dtypes other than `<f4`/`<i4`/`<i8` (incl. big-endian), a
-non-empty `filters` pipeline, and any other compressor (bz2, lzma, a bare lz4,
+non-empty `filters` pipeline, and any other compressor (lzma, a bare lz4,
 …). Sharding and non-directory stores are not implemented.
 
-## Dependencies: libblosc and zlib
+## Dependencies: libblosc, zlib and bzip2
 
 Chunk decompression is delegated to system C libraries — `blosc_decompress`
-(Blosc) and `inflate` (zlib, for the zlib/gzip codecs). There are no Alire
-crates for them, so install the development packages:
+(Blosc), `inflate` (zlib, for the zlib/gzip codecs) and
+`BZ2_bzBuffToBuffDecompress` (bzip2). There are no Alire crates for them, so
+install the development packages:
 
 ```console
-sudo apt install libblosc-dev zlib1g-dev      # Debian/Ubuntu
+sudo apt install libblosc-dev zlib1g-dev libbz2-dev   # Debian/Ubuntu
 ```
 
-They are linked via `pragma Linker_Options` in `src/zarr-blosc.ads` (`-lblosc`)
-and `src/zarr-zlib.ads` (`-lz`).
+They are linked via `pragma Linker_Options` in `src/zarr-blosc.ads` (`-lblosc`),
+`src/zarr-zlib.ads` (`-lz`) and `src/zarr-bz2.ads` (`-lbz2`).
 
 ## Design: compile-time where it can be, SPARK where it matters
 
@@ -64,7 +66,7 @@ boundaries:
 | `Zarr.Codec` (int decoders) | On | AoRTE + the little-endian assembly |
 | `Zarr.Indexing` | On | AoRTE **and** that products/offsets never overflow, for **any rank**, via saturating `Long_Long_Integer` arithmetic |
 | `Zarr.Codec.Decode_F4` body | Off | float bit-reinterpret is outside the SPARK value model |
-| `Zarr.Blosc`, `Zarr.Zlib`, `Zarr.Stores`, `Zarr.Metadata`, `Zarr.Arrays` | Off | the C calls, file I/O and JSON parsing |
+| `Zarr.Blosc`, `Zarr.Zlib`, `Zarr.Bz2`, `Zarr.Stores`, `Zarr.Metadata`, `Zarr.Arrays` | Off | the C calls, file I/O and JSON parsing |
 
 `gnatprove -P zarr.gpr` proves the core with no unproved checks. The key trick:
 `Zarr.Indexing` computes element counts and linear offsets in
@@ -90,7 +92,7 @@ needs no external data; run it from the repo root.
 ## Layout
 
 ```
-src/      zarr.ads + the reader (codec, indexing, blosc, zlib, stores,
+src/      zarr.ads + the reader (codec, indexing, blosc, zlib, bz2, stores,
           metadata, the generic arrays + F32/I32/I64 instances, fills)
 example/  read_spxw.adb — reads a real SPXW store and checks known values
 tests/    AUnit suite + committed fixture store (test_zarr.gpr)
@@ -98,5 +100,5 @@ tests/    AUnit suite + committed fixture store (test_zarr.gpr)
 
 ## Requirements
 
-GNAT + `gprbuild` and Alire; compiles as **Ada 2022**. `libblosc-dev` and
-`zlib1g-dev` for linking; `aunit` for the tests; `gnatprove` for the proof.
+GNAT + `gprbuild` and Alire; compiles as **Ada 2022**. `libblosc-dev`,
+`zlib1g-dev` and `libbz2-dev` for linking; `aunit` for the tests; `gnatprove` for the proof.

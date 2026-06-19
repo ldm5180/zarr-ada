@@ -169,8 +169,9 @@ package body Zarr.Metadata is
       end if;
 
       --  Compressor: null = none; "blosc" via libblosc (which handles its
-      --  inner codec -- zstd/lz4/...); "zlib"/"gzip" via libz; anything else
-      --  (bz2, lzma, a bare lz4, ...) is rejected rather than mis-decoded.
+      --  inner codec -- zstd/lz4/...); "zlib"/"gzip" via libz; "bz2" via
+      --  libbz2; anything else (lzma, a bare lz4, ...) is rejected rather than
+      --  mis-decoded.
       P := After_Key (Text, "compressor");
       if P = 0 or else (P <= Text'Last and then Text (P) = 'n') then
          M.Compressor := No_Compressor;
@@ -182,6 +183,8 @@ package body Zarr.Metadata is
                M.Compressor := Blosc_Compressor;
             elsif Id = "zlib" or else Id = "gzip" then
                M.Compressor := Zlib_Compressor;
+            elsif Id = "bz2" then
+               M.Compressor := Bz2_Compressor;
             else
                raise Unsupported
                  with "compressor """ & Id & """ is not supported";
