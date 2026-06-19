@@ -17,9 +17,7 @@ package body Zarr.Bz2 is
       Source_Len : unsigned;
       Small      : int;
       Verbosity  : int) return int
-     with Import,
-          Convention    => C,
-          External_Name => "BZ2_bzBuffToBuffDecompress";
+   with Import, Convention => C, External_Name => "BZ2_bzBuffToBuffDecompress";
 
    procedure Decompress (Src : Byte_Array; Dst : out Byte_Array) is
       Dest_Len : aliased unsigned := unsigned (Dst'Length);

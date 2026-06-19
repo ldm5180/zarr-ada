@@ -1,6 +1,7 @@
 --  Thin binding to the system bzip2 (libbz2-dev).  One call,
 --  BZ2_bzBuffToBuffDecompress, decodes a bzip2 stream -- the numcodecs "bz2"
 --  compressor.  Another external, non-SPARK boundary, like Zarr.Blosc.
+
 package Zarr.Bz2
   with SPARK_Mode => Off
 is
