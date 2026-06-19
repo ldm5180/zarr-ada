@@ -3,6 +3,7 @@
 --  auto-detects both wrappers, so one path serves the numcodecs "zlib" and
 --  "gzip" compressors.  A second external, non-SPARK boundary, like
 --  Zarr.Blosc.
+
 package Zarr.Zlib
   with SPARK_Mode => Off
 is

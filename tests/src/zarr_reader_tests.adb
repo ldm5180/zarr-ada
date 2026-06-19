@@ -203,10 +203,8 @@ package body Zarr_Reader_Tests is
         (T,
          Test_Nested_Separator'Access,
          "'/' dimension_separator is honoured");
-      Register_Routine
-        (T, Test_Zlib'Access, "zlib compressor read via libz");
-      Register_Routine
-        (T, Test_Gzip'Access, "gzip compressor read via libz");
+      Register_Routine (T, Test_Zlib'Access, "zlib compressor read via libz");
+      Register_Routine (T, Test_Gzip'Access, "gzip compressor read via libz");
       Register_Routine
         (T,
          Test_Reject_Unsupported'Access,

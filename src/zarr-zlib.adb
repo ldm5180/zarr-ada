@@ -10,24 +10,24 @@ package body Zarr.Zlib is
    --  padding; the fields default to zero/null so zlib uses its own allocator.
    type Z_Stream is record
       Next_In   : System.Address := System.Null_Address;
-      Avail_In  : unsigned       := 0;
-      Total_In  : unsigned_long  := 0;
+      Avail_In  : unsigned := 0;
+      Total_In  : unsigned_long := 0;
       Next_Out  : System.Address := System.Null_Address;
-      Avail_Out : unsigned       := 0;
-      Total_Out : unsigned_long  := 0;
+      Avail_Out : unsigned := 0;
+      Total_Out : unsigned_long := 0;
       Msg       : System.Address := System.Null_Address;
       State     : System.Address := System.Null_Address;
       Zalloc    : System.Address := System.Null_Address;
       Zfree     : System.Address := System.Null_Address;
       Opaque    : System.Address := System.Null_Address;
-      Data_Type : int            := 0;
-      Adler     : unsigned_long  := 0;
-      Reserved  : unsigned_long  := 0;
+      Data_Type : int := 0;
+      Adler     : unsigned_long := 0;
+      Reserved  : unsigned_long := 0;
    end record
    with Convention => C;
 
    function Zlib_Version return Interfaces.C.Strings.chars_ptr
-     with Import, Convention => C, External_Name => "zlibVersion";
+   with Import, Convention => C, External_Name => "zlibVersion";
 
    --  inflateInit2 is a macro for inflateInit2_(strm, bits, version, sizeof).
    function Inflate_Init2
@@ -35,13 +35,13 @@ package body Zarr.Zlib is
       Window_Bits : int;
       Version     : Interfaces.C.Strings.chars_ptr;
       Stream_Size : int) return int
-     with Import, Convention => C, External_Name => "inflateInit2_";
+   with Import, Convention => C, External_Name => "inflateInit2_";
 
    function Inflate (Strm : access Z_Stream; Flush : int) return int
-     with Import, Convention => C, External_Name => "inflate";
+   with Import, Convention => C, External_Name => "inflate";
 
    function Inflate_End (Strm : access Z_Stream) return int
-     with Import, Convention => C, External_Name => "inflateEnd";
+   with Import, Convention => C, External_Name => "inflateEnd";
 
    Z_Finish     : constant int := 4;
    Z_OK         : constant int := 0;
