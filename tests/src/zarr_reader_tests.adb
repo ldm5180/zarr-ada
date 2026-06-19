@@ -143,23 +143,43 @@ package body Zarr_Reader_Tests is
       Assert (Element_At (A, [3, 2]) = 11, "m[3,2] = 11 (last chunk via '/')");
    end Test_Nested_Separator;
 
-   --  A non-Blosc compressor (zlib) is rejected, not misrouted to libblosc.
-   procedure Test_Reject_Non_Blosc
+   --  A zlib-compressed store (numcodecs "zlib") is read via libz.
+   procedure Test_Zlib (T : in out AUnit.Test_Cases.Test_Case'Class) is
+      pragma Unreferenced (T);
+      use Zarr.I32;
+      A : constant Array_Data := Load ("tests/fixtures/zlibbed.zarr", "v");
+   begin
+      Assert (A.Length = 4, "4 elements");
+      Assert (A.Items (1) = 1 and then A.Items (4) = 4, "zlib v = 1..4");
+   end Test_Zlib;
+
+   --  A gzip-compressed store (numcodecs "gzip") is read via libz (same path).
+   procedure Test_Gzip (T : in out AUnit.Test_Cases.Test_Case'Class) is
+      pragma Unreferenced (T);
+      use Zarr.I32;
+      A : constant Array_Data := Load ("tests/fixtures/gzipped.zarr", "v");
+   begin
+      Assert (A.Length = 4, "4 elements");
+      Assert (A.Items (1) = 5 and then A.Items (4) = 8, "gzip v = 5..8");
+   end Test_Gzip;
+
+   --  A still-unsupported codec (bz2) is rejected, not mis-decoded.
+   procedure Test_Reject_Unsupported
      (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
    begin
       declare
          A : constant Zarr.I32.Array_Data :=
-           Zarr.I32.Load ("tests/fixtures/zlibbed.zarr", "v");
+           Zarr.I32.Load ("tests/fixtures/bz2ed.zarr", "v");
          pragma Unreferenced (A);
       begin
-         Assert (False, "zlib compressor should raise Unsupported");
+         Assert (False, "bz2 compressor should raise Unsupported");
       end;
    exception
       when Zarr.Unsupported =>
          null;  --  expected
-   end Test_Reject_Non_Blosc;
+   end Test_Reject_Unsupported;
 
    procedure Register_Tests (T : in out Test) is
    begin
@@ -184,9 +204,13 @@ package body Zarr_Reader_Tests is
          Test_Nested_Separator'Access,
          "'/' dimension_separator is honoured");
       Register_Routine
+        (T, Test_Zlib'Access, "zlib compressor read via libz");
+      Register_Routine
+        (T, Test_Gzip'Access, "gzip compressor read via libz");
+      Register_Routine
         (T,
-         Test_Reject_Non_Blosc'Access,
-         "non-Blosc compressor raises Unsupported");
+         Test_Reject_Unsupported'Access,
+         "unsupported compressor (bz2) raises Unsupported");
    end Register_Tests;
 
    overriding

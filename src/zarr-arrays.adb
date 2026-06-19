@@ -3,6 +3,7 @@ with Zarr.Metadata;
 with Zarr.Indexing;
 with Zarr.Stores;
 with Zarr.Blosc;
+with Zarr.Zlib;
 
 package body Zarr.Arrays is
 
@@ -145,6 +146,8 @@ package body Zarr.Arrays is
                         begin
                            if M.Compressor = Metadata.Blosc_Compressor then
                               Blosc.Decompress (Comp, Raw);
+                           elsif M.Compressor = Metadata.Zlib_Compressor then
+                              Zlib.Decompress (Comp, Raw);
                            elsif Comp'Length = Raw'Length then
                               Raw := Comp;
                            else

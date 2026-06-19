@@ -9,9 +9,10 @@ licenses = "MIT OR Apache-2.0 WITH LLVM-exception"
 website = ""
 tags = ["zarr", "ndarray", "blosc", "spark"]
 
-#  Decompression is delegated to the system Blosc library (libblosc-dev);
-#  there is no Alire crate for it, so it is linked via pragma Linker_Options
-#  in src/zarr-blosc.ads.  Install it with:  sudo apt install libblosc-dev
+#  Decompression is delegated to system C libraries (Blosc, and zlib for the
+#  zlib/gzip codecs); there are no Alire crates, so they are linked via pragma
+#  Linker_Options in src/zarr-blosc.ads and src/zarr-zlib.ads.  Install with:
+#      sudo apt install libblosc-dev zlib1g-dev
 
 [build-switches]
 "*".ada_version = "Ada2022"

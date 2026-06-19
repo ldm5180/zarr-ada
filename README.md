@@ -27,24 +27,26 @@ Supported, because that is what the target data uses:
   grids with edge-chunk trimming, and either `.` or `/` dimension separators.
 - The `.zarray` `fill_value` (number, `NaN`, `Infinity`, `null`) — honoured for
   omitted (all-fill) chunks and edge padding.
-- The **Blosc** compressor with any inner codec (zstd, lz4, …) and any shuffle —
-  decompression is delegated to the system Blosc library, which handles it all.
+- Compressors: **Blosc** (any inner codec — zstd, lz4, … — and any shuffle) via
+  the system Blosc library, and **zlib** and **gzip** via the system zlib.
 
 Out of scope — **rejected with `Unsupported`** rather than mis-read: Zarr v3,
 Fortran order, dtypes other than `<f4`/`<i4`/`<i8` (incl. big-endian), a
-non-empty `filters` pipeline, and any compressor other than Blosc (e.g. a bare
-`zlib`/`gzip` codec). Sharding and non-directory stores are not implemented.
+non-empty `filters` pipeline, and any other compressor (bz2, lzma, a bare lz4,
+…). Sharding and non-directory stores are not implemented.
 
-## Dependency: libblosc
+## Dependencies: libblosc and zlib
 
-Chunk decompression calls `blosc_decompress` from the system **Blosc** library.
-There is no Alire crate for it, so install the development package:
+Chunk decompression is delegated to system C libraries — `blosc_decompress`
+(Blosc) and `inflate` (zlib, for the zlib/gzip codecs). There are no Alire
+crates for them, so install the development packages:
 
 ```console
-sudo apt install libblosc-dev      # Debian/Ubuntu
+sudo apt install libblosc-dev zlib1g-dev      # Debian/Ubuntu
 ```
 
-It is linked via `pragma Linker_Options ("-lblosc")` in `src/zarr-blosc.ads`.
+They are linked via `pragma Linker_Options` in `src/zarr-blosc.ads` (`-lblosc`)
+and `src/zarr-zlib.ads` (`-lz`).
 
 ## Design: compile-time where it can be, SPARK where it matters
 
@@ -62,7 +64,7 @@ boundaries:
 | `Zarr.Codec` (int decoders) | On | AoRTE + the little-endian assembly |
 | `Zarr.Indexing` | On | AoRTE **and** that products/offsets never overflow, for **any rank**, via saturating `Long_Long_Integer` arithmetic |
 | `Zarr.Codec.Decode_F4` body | Off | float bit-reinterpret is outside the SPARK value model |
-| `Zarr.Blosc`, `Zarr.Stores`, `Zarr.Metadata`, `Zarr.Arrays` | Off | the C call, file I/O and JSON parsing |
+| `Zarr.Blosc`, `Zarr.Zlib`, `Zarr.Stores`, `Zarr.Metadata`, `Zarr.Arrays` | Off | the C calls, file I/O and JSON parsing |
 
 `gnatprove -P zarr.gpr` proves the core with no unproved checks. The key trick:
 `Zarr.Indexing` computes element counts and linear offsets in
@@ -88,13 +90,13 @@ needs no external data; run it from the repo root.
 ## Layout
 
 ```
-src/      zarr.ads + the reader (codec, indexing, blosc, stores, metadata,
-          the generic arrays + F32/I32/I64 instances, fills)
+src/      zarr.ads + the reader (codec, indexing, blosc, zlib, stores,
+          metadata, the generic arrays + F32/I32/I64 instances, fills)
 example/  read_spxw.adb — reads a real SPXW store and checks known values
 tests/    AUnit suite + committed fixture store (test_zarr.gpr)
 ```
 
 ## Requirements
 
-GNAT + `gprbuild` and Alire; compiles as **Ada 2022**. `libblosc-dev` for
-linking; `aunit` for the tests; `gnatprove` for the proof.
+GNAT + `gprbuild` and Alire; compiles as **Ada 2022**. `libblosc-dev` and
+`zlib1g-dev` for linking; `aunit` for the tests; `gnatprove` for the proof.

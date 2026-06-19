@@ -8,7 +8,7 @@ package Zarr.Metadata
   with SPARK_Mode => Off
 is
 
-   type Compressor_Kind is (No_Compressor, Blosc_Compressor);
+   type Compressor_Kind is (No_Compressor, Blosc_Compressor, Zlib_Compressor);
    type Mem_Order is (C_Order, F_Order);
 
    type Array_Meta is record
